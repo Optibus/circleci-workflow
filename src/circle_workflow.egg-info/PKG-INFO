@@ -1,0 +1,11 @@
+Metadata-Version: 2.1
+Name: circle-workflow
+Version: 0.0.1
+Summary: A small example package to test circle workflow
+Home-page: UNKNOWN
+License: UNKNOWN
+Description: # circle-workflow
+        
+Platform: UNKNOWN
+Description-Content-Type: text/markdown; charset=UTF-8
+Provides-Extra: test

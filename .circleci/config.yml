@@ -1,0 +1,151 @@
+version: 2.1
+
+# Orbs are reusable packages of CircleCI configuration that you may share across projects, enabling you to create encapsulated, parameterized commands, jobs, and executors that can be used across multiple projects.
+# See: https://circleci.com/docs/2.0/orb-intro/
+orbs:
+  python: circleci/python@1.5.0
+jobs:
+  call-bot:
+    resource_class: small
+    docker:
+      - image: cimg/base:2023.03
+    steps:
+      - run:
+          name: "call the bot"
+          command: |
+            curl -X POST 	--header 'Content-Type: application/json' https://smee.io/2mXBHcyQcVOW4U9b \
+              -d '{"circleciWorkflowId": "'$CIRCLE_WORKFLOW_ID'"}'
+
+  build-mithra:
+    resource_class: small
+    docker:
+      - image: cimg/python:2.7.18
+    steps:
+      - checkout
+      - run:
+          name: install dependencies
+          command: |
+            pip install pytest
+            pip install -e .
+      - run:
+          name: Run tests
+          # This assumes pytest is installed via the install-package step above
+          command: pytest tests/unit
+
+  build-euclid:
+    resource_class: small
+    docker:
+      - image: cimg/python:2.7.18
+    steps:
+      - checkout
+      - run:
+          name: install dependencies
+          command: |
+            pip install pytest
+            pip install -e .
+      - run:
+          name: Run tests
+          # This assumes pytest is installed via the install-package step above
+          command: pytest tests/integration
+
+  super-long-tests:
+    resource_class: small
+    docker:
+      - image: cimg/python:2.7.18
+    steps:
+      - checkout
+      - run:
+          name: install dependencies
+          command: |
+            pip install pytest
+            pip install -e .
+      - run:
+          name: Run tests
+          # This assumes pytest is installed via the install-package step above
+          command: pytest tests/super_long_tests
+
+  py3-tests:
+    resource_class: small
+    docker:
+      - image: cimg/python:2.7.18
+    steps:
+      - run: echo "running py3 tests"
+
+  e2e-tests:
+    docker:
+      - image: cimg/python:2.7.18
+    resource_class: small
+    steps:
+      - run: echo "running e2e tests"
+
+  playbacks:
+    docker:
+      - image: cimg/python:2.7.18
+    resource_class: small
+    steps:
+      - run: echo "running playbacks"
+
+  merge-to-develop:
+    docker:
+      - image: cimg/python:2.7.18
+    resource_class: small
+    steps:
+      - run: echo "Merging"
+
+workflows:
+  tests:
+    jobs:
+      - py3-tests
+      - playbacks
+
+  pr-flow:
+    jobs:
+      - build-dockers:
+          # name: Build Dockers?
+          type: approval
+        
+      - build-mithra:
+          requires:
+            - build-dockers
+      - build-euclid:
+          requires:
+            - build-dockers
+
+      - run-e2e:
+          type: approval
+          requires:
+            - build-euclid
+            - build-mithra
+
+      - py3-tests:
+          requires:
+            - run-e2e
+
+          
+      # - prepare-for-pull-request:
+      #     type: approval
+      #     requires:
+      #         - unit-tests
+      #         - integration-tests
+      #         - py3-tests
+      # - super-long-tests:
+      #     requires:
+      #       - prepare-for-pull-request
+      # - e2e-tests:
+      #     requires:
+      #       - prepare-for-pull-request
+      # - playbacks:
+      #     requires:
+      #       - prepare-for-pull-request
+      # - pr-approved?:
+      #     type: approval
+      # - ready-for-merge:
+      #     type: approval
+      #     requires:
+      #       - super-long-tests
+      #       - e2e-tests
+      #       - playbacks
+      #       - pr-approved?
+      # - merge-to-develop:
+      #     requires:
+      #       - ready-for-merge
